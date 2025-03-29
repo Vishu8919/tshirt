@@ -6,10 +6,16 @@
   <title>T-shirt Customizer</title>
 
   <!-- Use UMD builds from unpkg -->
+   <!-- After OBJLoader script -->
+<script src="https://unpkg.com/three@0.146.0/examples/js/loaders/SVGLoader.js"></script>
+<script src="https://unpkg.com/three@0.146.0/examples/js/curves/CurveExtras.js"></script>
   <script src="https://unpkg.com/three@0.146.0/build/three.min.js"></script>
   <script src="https://unpkg.com/three@0.146.0/examples/js/controls/OrbitControls.js"></script>
   <script src="https://unpkg.com/three@0.146.0/examples/js/loaders/OBJLoader.js"></script>
-
+  <!-- Add these NEW scripts -->
+<!-- After OBJLoader script -->
+<script src="https://unpkg.com/three@0.146.0/examples/js/loaders/SVGLoader.js"></script>
+<script src="https://unpkg.com/three@0.146.0/examples/js/curves/CurveExtras.js"></script>
   <!-- jQuery and Spectrum for the color picker -->
   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.1/spectrum.min.js"></script>
@@ -57,7 +63,7 @@
               <li>TEAM ORDER</li>
           </ul>
       </nav>
-      <div class="logo">Create your own Design</div>
+      <div class="logo">Create your own design</div>
       <div class="header-right">
           <button class="design-btn">DESIGN YOUR OWN</button>
           <div class="search-bar">
@@ -126,6 +132,10 @@
                       <option value="buttons">Buttons</option>
                   </select>
               </div>
+              <div class="model-selector" style="margin:15px 0;text-align:center;">
+                <button onclick="loadModel('tshirt')" class="model-btn">Show T-Shirt</button>
+                <button onclick="loadModel('svg')" class="model-btn">Show SVG Model</button>
+            </div>
 
               <div id="image-section" class="image-section section" style="display: none;">
                   <input type="file" id="imageUpload" accept="image/*">
@@ -142,6 +152,13 @@
               <button class="share-btn">Share my design</button>
               <button class="save-btn">Save design</button>
           </div>
+
+        
+
+<!-- Existing price section -->
+<div class="price-section">
+    ...
+</div>
 
           <!-- Price and Purchase -->
           <div class="price-section">

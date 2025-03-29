@@ -353,3 +353,76 @@ renderer.domElement.addEventListener('mouseup', () => {
     isDraggingText = false;
     currentDraggableText = null;
 });
+
+
+// ============= EXISTING CODE ABOVE (NO CHANGES MADE) ============= 
+// ... [All your existing code remains unchanged] ...
+// ============= NEW SVG FUNCTIONALITY ADDED BELOW =============
+// ============= SVG LOADER FIX =============
+// ============= SVG LOADER FINAL FIX ============= 
+
+// ============= SVG LOADER (CAMERA PRESERVE) ============= 
+let svgModel = null;
+
+function loadSVGModel() {
+    // Remove previous models
+    if (svgModel) scene.remove(svgModel);
+    if (tshirtMesh) tshirtMesh.visible = false;
+
+    new THREE.SVGLoader().load(
+        'models/Oracle1.svg',
+        (data) => {
+            const group = new THREE.Group();
+            const material = new THREE.MeshStandardMaterial({
+                color: 0xffffff,
+                metalness: 0.3,
+                roughness: 0.6,
+                side: THREE.DoubleSide
+            });
+
+            // Original scale factors
+            const SCALE_FACTOR = 0.05;
+            const DEPTH = 2;
+
+            data.paths.forEach((path) => {
+                const shapes = path.toShapes(true);
+                shapes.forEach((shape) => {
+                    const geometry = new THREE.ExtrudeGeometry(shape, {
+                        depth: DEPTH,
+                        bevelEnabled: false
+                    });
+                    
+                    const mesh = new THREE.Mesh(geometry, material);
+                    mesh.rotateX(Math.PI);
+                    group.add(mesh);
+                });
+            });
+
+            // Original positioning
+            group.position.set(0, 0, 0.2);
+            group.scale.set(SCALE_FACTOR, SCALE_FACTOR, SCALE_FACTOR);
+            
+            // Maintain original camera controls
+            const box = new THREE.Box3().setFromObject(group);
+            const center = box.getCenter(new THREE.Vector3());
+            group.position.sub(center);
+
+            svgModel = group;
+            scene.add(svgModel);
+        },
+        undefined,
+        (err) => console.error('SVG Load Error:', err)
+    );
+}
+
+// Original model switching without camera changes
+function loadModel(type) {
+    if (type === 'svg') {
+        loadSVGModel();
+        // Camera position remains untouched
+    } else {
+        if (svgModel) scene.remove(svgModel);
+        if (tshirtMesh) tshirtMesh.visible = true;
+        // Original camera position preserved
+    }
+}
