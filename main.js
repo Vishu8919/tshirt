@@ -25,6 +25,15 @@ const controls = new THREE.OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 
+// Add backside lighting (NEW CODE)
+const backLight = new THREE.DirectionalLight(0xffffff, 0.6);
+backLight.position.set(0, -1, -1); // Opposite direction of front light
+scene.add(backLight);
+
+// Add ambient fill light (NEW CODE)
+const fillLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.4);
+scene.add(fillLight);
+
 // Load T-shirt model
 const loader = new THREE.OBJLoader();
 loader.load(
@@ -255,4 +264,92 @@ tabs.forEach(tab => {
         // Refresh scene to ensure it updates properly
         renderer.render(scene, camera);
     });
+});
+
+
+
+// ============= NEW FUNCTIONALITY ADDED BELOW =============
+// Text manipulation controls
+let activeTextControls = null;
+
+function setupTextControls(textMesh) {
+    // Remove existing controls if any
+    if (activeTextControls) {
+        document.body.removeChild(activeTextControls);
+    }
+
+    // Create controls container
+    const controlsDiv = document.createElement('div');
+    controlsDiv.style.position = 'fixed';
+    controlsDiv.style.bottom = '20px';
+    controlsDiv.style.left = '20px';
+    controlsDiv.style.backgroundColor = 'white';
+    controlsDiv.style.padding = '15px';
+    controlsDiv.style.borderRadius = '8px';
+    controlsDiv.style.boxShadow = '0 2px 10px rgba(0,0,0,0.1)';
+    controlsDiv.innerHTML = `
+        <h3 style="margin:0 0 10px 0;">Text Controls</h3>
+        <label>Size: <input type="range" class="text-size" min="0.1" max="1" step="0.1" value="0.3"></label>
+        <label style="margin-left:15px;">Rotation: <input type="range" class="text-rotation" min="0" max="360" step="1" value="0"></label>
+        <label style="margin-left:15px;">Color: <input type="color" class="text-color" value="#000000"></label>
+    `;
+
+    // Size control
+    controlsDiv.querySelector('.text-size').addEventListener('input', (e) => {
+        textMesh.scale.set(e.target.value, e.target.value, e.target.value);
+    });
+
+    // Rotation control
+    controlsDiv.querySelector('.text-rotation').addEventListener('input', (e) => {
+        textMesh.rotation.z = THREE.MathUtils.degToRad(e.target.value);
+    });
+
+    // Color control
+    controlsDiv.querySelector('.text-color').addEventListener('input', (e) => {
+        textMesh.material.color.set(e.target.value);
+    });
+
+    document.body.appendChild(controlsDiv);
+    activeTextControls = controlsDiv;
+}
+
+// Enable text dragging
+let isDraggingText = false;
+let currentDraggableText = null;
+
+renderer.domElement.addEventListener('mousedown', (e) => {
+    const mouse = new THREE.Vector2();
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+
+    const intersects = raycaster.intersectObjects(textMeshes);
+    if (intersects.length > 0) {
+        currentDraggableText = intersects[0].object;
+        isDraggingText = true;
+    }
+});
+
+renderer.domElement.addEventListener('mousemove', (e) => {
+    if (!isDraggingText || !currentDraggableText) return;
+
+    const mouse = new THREE.Vector2();
+    mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
+    mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
+
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mouse, camera);
+
+    const plane = new THREE.Plane(new THREE.Vector3(0, 0, 1), 0);
+    const intersection = new THREE.Vector3();
+    raycaster.ray.intersectPlane(plane, intersection);
+    
+    currentDraggableText.position.copy(intersection);
+});
+
+renderer.domElement.addEventListener('mouseup', () => {
+    isDraggingText = false;
+    currentDraggableText = null;
 });
