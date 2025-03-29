@@ -1,76 +1,59 @@
-// Global variables for the T-shirt mesh and material
-let tshirtMesh, tshirtMaterial;
+// Global variables
+let tshirtMesh, tshirtMaterial, currentAddon, currentTextMesh;
+let originalColor = 0xffffff;  // White background
 
-// Set up the Three.js scene
+// Set up Three.js scene
 const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas') });
-renderer.setSize(window.innerWidth / 2, window.innerHeight);
+scene.background = new THREE.Color(originalColor);
 
-// Add OrbitControls for 360-degree rotation
-const controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true; // Smooth rotation
-controls.dampingFactor = 0.05;
+const canvas = document.getElementById('canvas');
+const renderer = new THREE.WebGLRenderer({ canvas });
+const camera = new THREE.PerspectiveCamera(75, canvas.clientWidth / canvas.clientHeight, 0.1, 1000);
 
-// Add a basic light to the scene for visibility
-const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(0, 1, 1).normalize();
+renderer.setSize(canvas.clientWidth, canvas.clientHeight);
+camera.position.set(0, 2, 5);
+
+const light = new THREE.AmbientLight(0x404040, 2);
 scene.add(light);
 
-// Add ambient light to reduce harsh shadows
-const ambientLight = new THREE.AmbientLight(0x404040); // Soft white light
-scene.add(ambientLight);
+const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+directionalLight.position.set(0, 5, 5);
+scene.add(directionalLight);
 
-// Load the T-shirt model
+// Controls
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.05;
+
+// Load T-shirt model
 const loader = new THREE.OBJLoader();
 loader.load(
-    'models/tshirt.obj', // Path to the T-shirt model
-    function (object) {
-        // Center and scale the model
-        const box = new THREE.BoxHelper(object, 0xffff00);
-        box.update();
-        const center = new THREE.Vector3();
-        object.traverse(function (child) {
-            if (child.isMesh && child.geometry) {
-                child.geometry.computeBoundingBox();
-                child.geometry.boundingBox.getCenter(center);
-            }
-        });
-        object.position.sub(center); // Center the model at origin
+    'models/tshirt.obj',
+    (object) => {
+        const box = new THREE.Box3().setFromObject(object);
+        const center = box.getCenter(new THREE.Vector3());
+        object.position.sub(center);
 
-        const size = new THREE.Box3().setFromObject(object).getSize(new THREE.Vector3());
+        const size = box.getSize(new THREE.Vector3());
         const maxDimension = Math.max(size.x, size.y, size.z);
-        const scaleFactor = 5 / maxDimension; // Scale to make largest dimension 5 units
-        object.scale.set(scaleFactor, scaleFactor, scaleFactor);
+        object.scale.setScalar(3 / maxDimension);
 
-        // Adjust camera position based on model size
-        camera.position.z = maxDimension * scaleFactor * 2;
-
-        // Assign a default material if none exists
-        tshirtMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 }); // Default color: red
-        object.traverse(function (child) {
+        // Material with white base color
+        tshirtMaterial = new THREE.MeshStandardMaterial({ color: originalColor });
+        object.traverse((child) => {
             if (child.isMesh) {
-                if (!child.material) {
-                    child.material = tshirtMaterial;
-                } else {
-                    child.material = tshirtMaterial; // Override with our material for consistency
-                }
+                child.material = tshirtMaterial;
             }
         });
 
-        tshirtMesh = object; // Store for later customization
-        scene.add(object);
-        console.log('T-shirt model loaded successfully');
+        tshirtMesh = object;
+        scene.add(tshirtMesh);
     },
-    function (xhr) {
-        console.log((xhr.loaded / xhr.total * 100) + '% loaded'); // Progress
-    },
-    function (error) {
-        console.error('An error occurred while loading the model:', error); // Error handling
-    }
+    undefined,
+    (error) => console.error('Error loading model:', error)
 );
 
-// Animation loop for rendering
+// Render loop
 function animate() {
     requestAnimationFrame(animate);
     controls.update();
@@ -78,176 +61,198 @@ function animate() {
 }
 animate();
 
-// Initialize the Spectrum color picker
-$(document).ready(function() {
+// --- COLOR PICKER FUNCTIONALITY ---
+$(document).ready(() => {
+    // Spectrum color picker
     $('#colorPicker').spectrum({
-        color: '#ff0000', // Default color: red
+        color: '#ffffff',
         showInput: true,
-        showAlpha: true,
+        showAlpha: false,
         showPalette: true,
         palette: [
-            ['#ff0000', '#00ff00', '#0000ff'],
+            ['#ff0000', '#00ff00', '#0000ff'], 
             ['#ffff00', '#ff00ff', '#00ffff']
         ],
-        chooseText: 'Select',
-        cancelText: 'Cancel',
-        change: function(color) {
+        change: (color) => {
             if (tshirtMaterial) {
-                tshirtMaterial.color.set(color.toHexString()); // Update the T-shirt color
-                tshirtMaterial.map = null; // Remove any texture to show the color
+                tshirtMaterial.color.set(color.toHexString());
                 tshirtMaterial.needsUpdate = true;
             }
         }
     });
-});
 
-// Text input functionality
-const textInput = document.getElementById('textInput');
-textInput.addEventListener('input', function() {
-    const text = textInput.value;
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = 256;
-    canvas.height = 256;
-    ctx.fillStyle = 'white';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = 'black';
-    ctx.font = 'bold 48px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-    const texture = new THREE.CanvasTexture(canvas);
-    if (tshirtMaterial) {
-        tshirtMaterial.map = texture;
-        tshirtMaterial.needsUpdate = true;
-    }
-});
-
-// Image upload functionality
-const imageUpload = document.getElementById('imageUpload');
-imageUpload.addEventListener('change', function() {
-    const file = imageUpload.files[0];
-    if (!file) return; // Exit if no file is selected
-    const data = new FormData();
-    data.append('image', file);
-    fetch('http://localhost:3000/upload', {
-        method: 'POST',
-        body: data
-    })
-    .then(response => response.json())
-    .then(data => {
-        const imageUrl = data.url;
-        const loader = new THREE.TextureLoader();
-        loader.load(imageUrl, function(texture) {
+    // Ensure color swatches update T-shirt color properly
+    document.querySelectorAll('.color-swatch').forEach(swatch => {
+        swatch.addEventListener('click', () => {
+            const color = swatch.dataset.color;
             if (tshirtMaterial) {
-                tshirtMaterial.map = texture;
+                tshirtMaterial.color.set(color);  // Apply color on T-shirt
                 tshirtMaterial.needsUpdate = true;
             }
-        }, undefined, function(error) {
-            console.error('An error occurred while loading the texture:', error);
+            $('#colorPicker').spectrum('set', color);  // Sync picker with swatch
         });
-    })
-    .catch(error => {
-        console.error('An error occurred while uploading the image:', error);
     });
 });
 
-// Add-ons functionality
+// --- NEW FUNCTIONALITY: COLOR BOX INTERACTION ---
+document.querySelectorAll('.color-box').forEach(box => {
+    box.addEventListener('click', () => {
+        const color = box.style.backgroundColor;
+
+        if (tshirtMaterial) {
+            tshirtMaterial.color.set(new THREE.Color(color));
+            tshirtMaterial.needsUpdate = true;
+        }
+
+        // Highlight selected color box
+        document.querySelectorAll('.color-box').forEach(b => b.classList.remove('selected'));
+        box.classList.add('selected');
+    });
+});
+
+// --- RESET FUNCTIONALITY ---
+function resetDesign() {
+    // Reset color
+    if (tshirtMaterial) {
+        tshirtMaterial.color.set(originalColor);
+        tshirtMaterial.map = null;
+        tshirtMaterial.needsUpdate = true;
+    }
+
+    // Reset image upload
+    document.getElementById('imageUpload').value = '';
+    
+    // Reset text
+    if (currentTextMesh) {
+        scene.remove(currentTextMesh);
+        currentTextMesh = null;
+    }
+    
+    // Reset addons
+    if (currentAddon) {
+        scene.remove(currentAddon);
+        currentAddon = null;
+    }
+    
+    // Reset UI elements
+    $('#colorPicker').spectrum('set', '#ffffff');
+    document.getElementById('textInput').value = '';
+}
+
+// Add reset event listener
+document.querySelector('.reset-btn').addEventListener('click', resetDesign);
+
+// --- SAVE DESIGN FUNCTIONALITY ---
+document.querySelector('.save-btn').addEventListener('click', () => {
+    renderer.render(scene, camera);
+    const dataURL = canvas.toDataURL('image/png');
+
+    const link = document.createElement('a');
+    link.download = 'tshirt-design.png';
+    link.href = dataURL;
+    link.click();
+});
+
+// --- SHARE DESIGN FUNCTIONALITY ---
+document.querySelector('.share-btn').addEventListener('click', () => {
+    renderer.render(scene, camera);
+    const dataURL = canvas.toDataURL('image/png');
+
+    // Simulate sharing link
+    const shareLink = `https://mytshirtshare.com/design?img=${encodeURIComponent(dataURL)}`;
+    alert(`Share your design: ${shareLink}`);
+});
+
+// --- IMAGE UPLOAD FUNCTIONALITY ---
+const imageUpload = document.getElementById('imageUpload');
+imageUpload.addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+        const texture = new THREE.TextureLoader().load(e.target.result);
+        texture.colorSpace = THREE.SRGBColorSpace;
+        tshirtMaterial.map = texture;
+        tshirtMaterial.needsUpdate = true;
+    };
+    reader.readAsDataURL(file);
+});
+
+// --- ADDONS FUNCTIONALITY ---
 const addonsSelect = document.getElementById('addons');
-let currentAddon = null; // Track the current add-on to remove it if a new one is selected
-addonsSelect.addEventListener('change', function() {
-    // Remove the previous add-on if it exists
+addonsSelect.addEventListener('change', () => {
     if (currentAddon) {
         scene.remove(currentAddon);
         currentAddon = null;
     }
 
     const selected = addonsSelect.value;
-    if (selected === 'pocket') {
-        const loader = new THREE.OBJLoader();
-        loader.load('models/pocket.obj', function(object) {
-            // Scale and position the pocket (adjust as needed)
-            const box = new THREE.BoxHelper(object, 0xffff00);
-            box.update();
-            const size = new THREE.Box3().setFromObject(object).getSize(new THREE.Vector3());
-            const maxDimension = Math.max(size.x, size.y, size.z);
-            const scaleFactor = 5 / maxDimension;
-            object.scale.set(scaleFactor, scaleFactor, scaleFactor);
-            object.position.set(0, 0, 0.1); // Adjust position to place on T-shirt
-            object.traverse(function(child) {
+    if (!selected) return;
+
+    const addonLoader = new THREE.OBJLoader();
+    addonLoader.load(
+        `models/${selected}.obj`,
+        (object) => {
+            object.scale.set(0.5, 0.5, 0.5);
+            object.position.set(0, 0, 0.1);
+
+            object.traverse((child) => {
                 if (child.isMesh) {
-                    child.material = new THREE.MeshBasicMaterial({ color: 0x000000 }); // Black pocket
+                    child.material = new THREE.MeshStandardMaterial({ color: 0x000000 });
                 }
             });
-            scene.add(object);
+
             currentAddon = object;
-        }, undefined, function(error) {
-            console.error('An error occurred while loading the pocket:', error);
-        });
-    } else if (selected === 'buttons') {
-        const loader = new THREE.OBJLoader();
-        loader.load('models/buttons.obj', function(object) {
-            // Scale and position the buttons (adjust as needed)
-            const box = new THREE.BoxHelper(object, 0xffff00);
-            box.update();
-            const size = new THREE.Box3().setFromObject(object).getSize(new THREE.Vector3());
-            const maxDimension = Math.max(size.x, size.y, size.z);
-            const scaleFactor = 5 / maxDimension;
-            object.scale.set(scaleFactor, scaleFactor, scaleFactor);
-            object.position.set(0, 0, 0.1); // Adjust position to place on T-shirt
-            object.traverse(function(child) {
-                if (child.isMesh) {
-                    child.material = new THREE.MeshBasicMaterial({ color: 0x000000 }); // Black buttons
-                }
+            scene.add(currentAddon);
+        },
+        undefined,
+        (error) => console.error(`Error loading addon (${selected}):`, error)
+    );
+});
+
+// --- ADD TEXT FUNCTIONALITY ---
+document.getElementById('addTextBtn').addEventListener('click', () => {
+    const text = document.getElementById('textInput').value;
+
+    if (currentTextMesh) {
+        scene.remove(currentTextMesh);
+        currentTextMesh = null;
+    }
+
+    if (text) {
+        const loader = new THREE.FontLoader();
+        loader.load('fonts/helvetiker_regular.typeface.json', (font) => {
+            const geometry = new THREE.TextGeometry(text, {
+                font: font,
+                size: 0.4,
+                height: 0.1
             });
-            scene.add(object);
-            currentAddon = object;
-        }, undefined, function(error) {
-            console.error('An error occurred while loading the buttons:', error);
+
+            const textMaterial = new THREE.MeshStandardMaterial({ color: 0x000000 });
+            currentTextMesh = new THREE.Mesh(geometry, textMaterial);
+
+            currentTextMesh.position.set(-1, 1, 0.6);
+            scene.add(currentTextMesh);
         });
     }
 });
 
-// Reset to default functionality
-const resetBtn = document.querySelector('.reset-btn');
-resetBtn.addEventListener('click', function(event) {
-    event.preventDefault();
-    if (tshirtMaterial) {
-        tshirtMaterial.color.set(0xff0000); // Reset to red
-        tshirtMaterial.map = null; // Remove any texture
-        tshirtMaterial.needsUpdate = true;
-    }
-    textInput.value = ''; // Clear text input
-    imageUpload.value = ''; // Clear image upload
-    addonsSelect.value = ''; // Clear add-ons
-    if (currentAddon) {
-        scene.remove(currentAddon);
-        currentAddon = null;
-    }
-});
-
-// Tab switching functionality
+// --- TAB SWITCHING FUNCTIONALITY ---
 const tabs = document.querySelectorAll('.customization-tabs .tab');
 const sections = document.querySelectorAll('.customization-content > div');
 
 tabs.forEach(tab => {
-    tab.addEventListener('click', function() {
-        // Remove active class from all tabs
+    tab.addEventListener('click', function () {
         tabs.forEach(t => t.classList.remove('active'));
-        // Add active class to clicked tab
         this.classList.add('active');
 
-        // Hide all sections
         sections.forEach(section => section.style.display = 'none');
-        // Show the corresponding section
-        if (this.textContent === 'Choose Color') {
-            document.querySelector('.color-section').style.display = 'block';
-        } else if (this.textContent === 'Addons') {
-            document.querySelector('.addons-section').style.display = 'block';
-        } else if (this.textContent === 'Image or Logo') {
-            document.querySelector('.image-section').style.display = 'block';
-        } else if (this.textContent === 'Add Text') {
-            document.querySelector('.text-section').style.display = 'block';
-        }
+
+        const tabName = this.textContent.toLowerCase().replace(' ', '-');
+        document.querySelector(`.${tabName}-section`).style.display = 'block';
+
+        // Refresh scene to ensure it updates properly
+        renderer.render(scene, camera);
     });
 });

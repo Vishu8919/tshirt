@@ -1,117 +1,169 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>T-shirt Customizer</title>
-    <script src="https://cdn.skypack.dev/three@0.146.0"></script>
-    <script src="https://cdn.skypack.dev/three@0.146.0/examples/jsm/controls/OrbitControls.js"></script>
-    <script src="https://cdn.skypack.dev/three@0.146.0/examples/jsm/loaders/OBJLoader.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.1/spectrum.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.1/spectrum.min.css">
-    <link rel="stylesheet" href="styles.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>T-shirt Customizer</title>
+
+  <!-- Use UMD builds from unpkg -->
+  <script src="https://unpkg.com/three@0.146.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.146.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://unpkg.com/three@0.146.0/examples/js/loaders/OBJLoader.js"></script>
+
+  <!-- jQuery and Spectrum for the color picker -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.1/spectrum.min.js"></script>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.1/spectrum.min.css">
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    /* New styles for color blocks */
+    .color-container {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin: 20px 0;
+    }
+
+    .color-box {
+        width: 50px;
+        height: 50px;
+        border: 2px solid #ccc;
+        cursor: pointer;
+        transition: transform 0.2s, border 0.2s;
+    }
+
+    .color-box:hover {
+        transform: scale(1.1);
+    }
+
+    .selected {
+        border: 3px solid black;
+    }
+  </style>
 </head>
+
 <body>
-    <!-- Header Section -->
-    <header>
-        <nav>
-            <ul>
-                <li>MEN</li>
-                <li>WOMEN</li>
-                <li>KIDS</li>
-                <li>STORE</li>
-                <li>TEAM ORDER</li>
-            </ul>
-        </nav>
-        <div class="logo">HYVE</div>
-        <div class="header-right">
-            <button class="design-btn">DESIGN YOUR OWN</button>
-            <div class="search-bar">
-                <input type="text" placeholder="Search products">
-                <span class="search-icon">🔍</span>
-            </div>
-            <div class="icons">
-                <span class="profile-icon">👤</span>
-                <span class="wishlist-icon">❤️ (0)</span>
-                <span class="bag-icon">🛍️ (0)</span>
-            </div>
-        </div>
-    </header>
 
-    <!-- Main Content Section -->
-    <main>
-        <!-- Left Column: 3D Model Canvas -->
-        <div class="left-column">
-            <canvas id="canvas"></canvas>
-            <div class="whatsapp-icon">💬</div>
-        </div>
+  <!-- Header Section -->
+  <header>
+      <nav>
+          <ul>
+              <li>MEN</li>
+              <li>WOMEN</li>
+              <li>KIDS</li>
+              <li>STORE</li>
+              <li>TEAM ORDER</li>
+          </ul>
+      </nav>
+      <div class="logo">HYVE</div>
+      <div class="header-right">
+          <button class="design-btn">DESIGN YOUR OWN</button>
+          <div class="search-bar">
+              <input type="text" placeholder="Search products">
+              <span class="search-icon">🔍</span>
+          </div>
+          <div class="icons">
+              <span class="profile-icon">👤</span>
+              <span class="wishlist-icon">❤️ (0)</span>
+              <span class="bag-icon">🛍️ (0)</span>
+          </div>
+      </div>
+  </header>
 
-        <!-- Right Column: Product Details and Customization -->
-        <div class="right-column">
-            <h1>Northern Woods Half Sleeve Cycling Jersey</h1>
-            <div class="product-options">
-                <a href="#" class="change-product">Change Product</a>
-                <a href="#" class="change-size">Change size / Add Team</a>
-            </div>
+  <!-- Main Content Section -->
+  <main>
+      <!-- Left Column: 3D Model Canvas -->
+      <div class="left-column">
+          <canvas id="canvas"></canvas>
+          <div class="whatsapp-icon">💬</div>
+      </div>
 
-            <!-- Customization Tabs -->
-            <div class="customization-tabs">
-                <button class="tab active">Choose Color</button>
-                <button class="tab">Addons</button>
-                <button class="tab">Image or Logo</button>
-                <button class="tab">Add Text</button>
-            </div>
+      <!-- Right Column: Product Details and Customization -->
+      <div class="right-column">
+          <h1>Northern Woods Half Sleeve Cycling Jersey</h1>
+          <div class="product-options">
+              <a href="#" class="change-product">Change Product</a>
+              <a href="#" class="change-size">Change size / Add Team</a>
+          </div>
 
-            <!-- Customization Content -->
-            <div class="customization-content">
-                <div class="color-section">
-                    <label>CHOOSE COLOR</label>
-                    <button class="presets-btn">Choose from presets</button>
-                    <div class="make-combination">
-                        MAKE YOUR OWN COMBINATION<br>Click on each color to change
-                    </div>
-                    <div class="color-swatches">
-                        <div class="swatch" style="background-color: #ff0000;"></div>
-                        <div class="swatch" style="background-color: #ffffff;"></div>
-                        <div class="swatch" style="background-color: #ff9900;"></div>
-                        <div class="swatch" style="background-color: #ff00ff;"></div>
-                        <div class="swatch" style="background-color: #00ffff;"></div>
-                        <div class="swatch" style="background-color: #990000;"></div>
-                    </div>
-                    <input type="text" id="colorPicker" style="display: none;" />
-                    <a href="#" class="reset-btn">reset to default</a>
-                </div>
-                <div class="addons-section" style="display: none;">
-                    <select id="addons">
-                        <option value="">Select an addon</option>
-                        <option value="pocket">Pocket</option>
-                        <option value="buttons">Buttons</option>
-                    </select>
-                </div>
-                <div class="image-section" style="display: none;">
-                    <input type="file" id="imageUpload" accept="image/*">
-                </div>
-                <div class="text-section" style="display: none;">
-                    <input type="text" id="textInput" placeholder="Enter text">
-                </div>
-            </div>
+          <!-- Customization Tabs -->
+          <div class="customization-tabs">
+              <button class="tab" data-target="color-section">Choose Color</button>
+              <button class="tab" data-target="addons-section">Addons</button>
+              <button class="tab" data-target="image-section">Image or Logo</button>
+              <button class="tab" data-target="text-section">Add Text</button>
+          </div>
 
-            <!-- Share and Save Options -->
-            <div class="share-save">
-                <button class="share-btn">Share my design</button>
-                <button class="save-btn">Save design</button>
-            </div>
+          <!-- Customization Content -->
+          <div class="customization-content">
+              <div id="color-section" class="color-section section">
+                  <label>CHOOSE COLOR</label>
+                  <button class="presets-btn">Choose from presets</button>
+                  <div class="make-combination">
+                      MAKE YOUR OWN COMBINATION<br>Click on each color to change
+                  </div>
 
-            <!-- Price and Purchase -->
-            <div class="price-section">
-                <p>Total Amount: <span class="price">₹1525</span></p>
-                <a href="#" class="price-breakdown">See price breakdown</a>
-                <button class="add-to-cart">ADD TO CART</button>
-            </div>
-        </div>
-    </main>
+                  <!-- Color blocks -->
+                  <div class="color-container">
+                      <div class="color-box" style="background-color: #D32F2F;" data-color="#D32F2F"></div>
+                      <div class="color-box" style="background-color: #FFFFFF;" data-color="#FFFFFF"></div>
+                      <div class="color-box" style="background-color: #F57C00;" data-color="#F57C00"></div>
+                      <div class="color-box" style="background-color: #E91E63;" data-color="#E91E63"></div>
+                      <div class="color-box" style="background-color: #1A237E;" data-color="#1A237E"></div>
+                      <div class="color-box" style="background-color: #00796B;" data-color="#00796B"></div>
+                  </div>
 
-    <script src="main.js"></script>
+                  <input type="text" id="colorPicker" style="display: none;" />
+                  <a href="#" class="reset-btn">reset to default</a>
+              </div>
+
+              <div id="addons-section" class="addons-section section" style="display: none;">
+                  <select id="addons">
+                      <option value="">Select an addon</option>
+                      <option value="pocket">Pocket</option>
+                      <option value="buttons">Buttons</option>
+                  </select>
+              </div>
+
+              <div id="image-section" class="image-section section" style="display: none;">
+                  <input type="file" id="imageUpload" accept="image/*">
+              </div>
+
+              <div id="text-section" class="text-section section" style="display: none;">
+                  <input type="text" id="textInput" placeholder="Enter text">
+                  <button id="addTextBtn">Add Text</button>
+              </div>
+          </div>
+
+          <!-- Share and Save Options -->
+          <div class="share-save">
+              <button class="share-btn">Share my design</button>
+              <button class="save-btn">Save design</button>
+          </div>
+
+          <!-- Price and Purchase -->
+          <div class="price-section">
+              <p>Total Amount: <span class="price">₹1525</span></p>
+              <a href="#" class="price-breakdown">See price breakdown</a>
+              <button class="add-to-cart">ADD TO CART</button>
+          </div>
+      </div>
+  </main>
+
+  <script src="main.js"></script>
+
+  <script>
+    // Tabs functionality
+    document.querySelectorAll('.tab').forEach(tab => {
+        tab.addEventListener('click', () => {
+            document.querySelectorAll('.section').forEach(section => section.style.display = 'none');
+            const target = tab.getAttribute('data-target');
+            document.getElementById(target).style.display = 'block';
+        });
+    });
+  </script>
+
 </body>
 </html>
